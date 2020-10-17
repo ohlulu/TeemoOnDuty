@@ -1,25 +1,52 @@
+
+function getDate () {
+  var date = new Date;
+  return date.toLocaleString()
+}
+
 /**
  * This is the main entrypoint to your Probot app
  * @param {import('probot').Application} app
  */
 module.exports = app => {
   
-  app.log('Yay, Teemo on duty!')
+  app.log(`現在時間 ${getDate()} - Teemo on duty!`)
 
   /**
    * Pull request opened
-   * auto assign to pull request owner
+   * auto add reviewer
    */
   app.on('pull_request.opened', async context => {
 
     const payload = context.payload.pull_request
     const user = payload.user.login
 
-    app.log(`[ PR ] : from @${ user }`)
+    app.log(`[ ${getDate()} ] [ pull_request.opened ] [ @${ user } ]`)
 
-    const params = context.issue({ assignees: [user] })
-    return context.github.issues.addAssignees(params)
+    app.log(`requestReviewers: `)
+    const reviewersParams = context.pullRequest({ reviewers: ['TemmoOnDuty'] })
+    context.github.pulls.requestReviewers(reviewersParams)
+
+    app.log(`addAssignees: ${user}`)
+    const assigneesParams = context.issue({ assignees: [user] })
+    context.github.issues.addAssignees(assigneesParams)
+    return 
   })
+
+  /**
+   * Pull request opened
+   * auto assign to pull request owner
+   */
+  // app.on('pull_request.opened', async context => {
+
+  //   const payload = context.payload.pull_request
+  //   const user = payload.user.login
+
+  //   app.log(`[ pull request open ] : from @${ user }`)
+
+  //   const params = context.issue({ assignees: [user] })
+  //   return context.github.issues.addAssignees(params)
+  // })
 
   /** 
    * Pull request review
@@ -33,8 +60,8 @@ module.exports = app => {
     const state = payload.state 
 
     if (state === 'approved') {
-
-      app.log(`[ Approved ] : from @${ user }`)
+      
+      app.log(`[ ${getDate()} ] [ pull_request_review.submitted.approved ] [ @${ user } ]`)
 
       const label = lableDic[user]
       return context.github.issues.addLabels(context.issue({ labels:[label] }))
